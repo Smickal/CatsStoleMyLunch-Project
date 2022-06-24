@@ -1,13 +1,23 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Events;
 
 public class Player : MonoBehaviour
 {
 
+    Transform[] knockbackPlace;
+    [SerializeField] float knockBackPower;
+    [SerializeField] knockBackPoints points;
+    Transform currentKnockbackPoint;
+    
     [Header("Movement")]
     [SerializeField] float playerSpeed = 10f;
     [SerializeField] float playerJumpForce = 20f;
+
+    [Header("Attributes")]
+    [SerializeField] public float sandalDamage = 1;
+    [SerializeField] public float sandalCooldown = 1f;
 
     [Header("Ground Raycast")]
     [SerializeField] float extraRaycastToGround = 0.1f;
@@ -17,12 +27,29 @@ public class Player : MonoBehaviour
     float dir;
     Rigidbody2D rb;
 
+    [Header("Animation")]
+    [SerializeField] Animator anim;
+
+    [Header("DeathPanel")]
+    [SerializeField] DeathPanel panel;
+
     HealthScript healthScript;
+
+    ScreenShake screenShake;
+
+    private Vector2 knocbackPos;
+
+    [SerializeField] private UnityEvent OnMove;
+    [SerializeField] private UnityEvent OnStop;
 
     private void Awake()
     {
         rb = GetComponent<Rigidbody2D>();
-        healthScript = gameObject.GetComponent<HealthScript>();
+        healthScript = GetComponent<HealthScript>();
+        knockbackPlace = points.knocbackPoints;
+        screenShake = GetComponent<ScreenShake>();
+
+        Time.timeScale = 1f;
     }
 
 
@@ -30,11 +57,19 @@ public class Player : MonoBehaviour
     {
         Jump();
         ChangeDirection();
+        DustTrail();
+    }
 
-        if (Input.GetKeyDown(KeyCode.Y))
+
+    void DustTrail()
+    {
+        if (dir == 0 && isGround)
         {
-            healthScript.TakeDamage(10);
-            healthScript.SetCurrentHPToDisplay();
+            OnStop.Invoke();
+        }
+        else
+        {
+            OnMove.Invoke();
         }
     }
 
@@ -50,18 +85,27 @@ public class Player : MonoBehaviour
         if(Input.GetKeyDown(KeyCode.Space) && isGround && isMoving)
         {
             rb.AddForce(Vector2.up * playerJumpForce);
+            anim.SetTrigger("SpacePressed");
         }
         
     }
 
     void RaycastToGround()
     {
-        Collider2D boxCollider = GetComponent<Collider2D>();
-        RaycastHit2D raycastHit = Physics2D.BoxCast(boxCollider.bounds.center, boxCollider.bounds.size, 0f, Vector2.down, boxCollider.bounds.extents.y + extraRaycastToGround, groundLayer); ;
-        Debug.DrawRay(boxCollider.bounds.center, Vector2.down * (boxCollider.bounds.extents.y + extraRaycastToGround), Color.red);
+        Collider2D capsuleCollider = GetComponent<Collider2D>();
+        RaycastHit2D raycastHit = Physics2D.BoxCast(capsuleCollider.bounds.center, capsuleCollider.bounds.size, 0f, Vector2.down, capsuleCollider.bounds.extents.y + extraRaycastToGround, groundLayer); ;
+        Debug.DrawRay(capsuleCollider.bounds.center, Vector2.down * (capsuleCollider.bounds.extents.y + extraRaycastToGround), Color.red);
         //Debug.Log(raycastHit.collider);
-        if (raycastHit.collider != null) isGround = true;
-        else isGround = false;
+        if (raycastHit.collider != null)
+        {
+            isGround = true;
+            anim.SetBool("IsAir", false);
+        }
+        else
+        {
+            isGround = false;
+            anim.SetBool("IsAir", true);
+        }
     }
 
     private void Move()
@@ -69,10 +113,17 @@ public class Player : MonoBehaviour
         if (isMoving)
         {
             dir = Input.GetAxisRaw("Horizontal");
+            if (dir != 0f)
+            {
+                anim.SetBool("IsWalking", true);
+            }
+            else
+                anim.SetBool("IsWalking", false);
             Vector2 tempSpeed = new Vector2(dir * Time.deltaTime * playerSpeed, 0);
 
-            //transform.Translate(new Vector2(dir * playerSpeed * Time.deltaTime, 0));
             rb.AddForce(tempSpeed, ForceMode2D.Impulse);
+
+            
         }
     }
 
@@ -102,5 +153,52 @@ public class Player : MonoBehaviour
     {
         isMoving = true;
     }
+
+    public void TakeDamage(float damage)
+    {
+        healthScript.TakeDamage(damage);
+        anim.SetTrigger("Damaged");
+        screenShake.GenerateScreenShake();
+        FindObjectOfType<AudioManager>().PlaySound("PlayerDamaged_SFX");
+
+        if(healthScript.GetCurrentHP() <= 0)
+        {
+            panel.EnableDeathPanel();
+        }
+
+    }
+
+    public void knocBackEffect()
+    {
+        Vector2 directionToKnockback = (Vector2)(currentKnockbackPoint.position - transform.position);
+        rb.AddForce(directionToKnockback * knockBackPower, ForceMode2D.Impulse);
+    }
+
+    public void EnemyComingFrom(bool temp)
+    {
+        if (!temp)
+        {
+            //Debug.Log("right");
+            if(transform.localScale.x == 1)
+                currentKnockbackPoint = knockbackPlace[1];
+            else
+                currentKnockbackPoint = knockbackPlace[0];
+        }
+        else
+        {
+            if (transform.localScale.x == -1)
+                currentKnockbackPoint = knockbackPlace[1];
+            else
+                currentKnockbackPoint = knockbackPlace[0];
+        }
+
+    }
+
+    public bool GetDir()
+    {
+        if (transform.localScale.x > 0f) return true;
+        else return false;
+    }
+
 
 }

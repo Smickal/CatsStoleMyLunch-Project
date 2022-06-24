@@ -4,7 +4,6 @@ public class EnemyPatrolState : EnemyStateBase
 {
     float timer = 0;
     [SerializeField] float maxTime = 0;
-    IdleBehaviour idleBehaviour;
     Enemies enemyScript;
     Animator animator;
     BehaviourCollider col;
@@ -17,7 +16,7 @@ public class EnemyPatrolState : EnemyStateBase
 
     public override void EnterState(EnemyStateManager enemy)
     {
-        col.ChangeText("Patrol State");
+        col.ChangeText("PATROL STATE");
         enemyScript = enemy.gameObject.GetComponent<Enemies>();
         animator = enemy.gameObject.GetComponent<Animator>();
 
@@ -32,14 +31,13 @@ public class EnemyPatrolState : EnemyStateBase
         if (enemyScript.RaycastToWall() || timer > maxTime)
         {
             enemyScript.isMoving = false;
-            animator.SetBool("IsPatrolling", false);
-            enemy.SwitchState(enemy.IdleState);
+            enemy.SwitchState(enemy.IdleState, "SetToIdle");
         }
         //check if cat see player
         if (enemyScript.RayCastToPlayer())
         {
             enemyScript.isMoving = false;
-            enemy.SwitchState(enemy.DetectState);
+            enemy.SwitchState(enemy.DetectState, "SetToIdle");
         }
     }
 

@@ -13,7 +13,7 @@ public class TargetPoints : MonoBehaviour
         for(int i = 0; i < waypoints.Length; i++)
         {
             waypoints[i] = transform.GetChild(i);
-            Debug.Log(waypoints[i].gameObject + " :" + waypoints[i].transform.position);
+            //Debug.Log(waypoints[i].gameObject + " :" + waypoints[i].transform.position);
         }
     }
 

@@ -35,15 +35,14 @@ public class EnemyIdleState : EnemyStateBase
         if (timer >= maxTime)
         {
                 //enemyScript.isRight = !enemyScript.isRight;
-                animator.SetBool("IsPatrolling", true);
                 enemy.ExitState(enemy.IdleState);
-                enemy.SwitchState(enemy.PatrolState);
+                enemy.SwitchState(enemy.PatrolState, "SetToPatrol");
         }
 
         //Check For player
         if (enemyScript.RayCastToPlayer())
         {
-            enemy.SwitchState(enemy.DetectState);
+            enemy.SwitchState(enemy.DetectState, "SetToDetect");
         }
     }
 

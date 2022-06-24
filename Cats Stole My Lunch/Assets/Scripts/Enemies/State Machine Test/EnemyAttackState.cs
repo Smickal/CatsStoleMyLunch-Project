@@ -6,6 +6,8 @@ public class EnemyAttackState : EnemyStateBase
     Player player;
     Enemies enemyScript;
     BoxCollider2D attHitbox;
+    Animator anim;
+
     //Cat Attack Attributes
     float attackDamage;
     float attackSpeed;
@@ -13,7 +15,7 @@ public class EnemyAttackState : EnemyStateBase
 
 
 
-    public EnemyAttackState(BehaviourCollider col, float attackDamage, float attackSpeed, float moveSpeed, BoxCollider2D boxCol, Player player)
+    public EnemyAttackState(BehaviourCollider col, float attackDamage, float attackSpeed, float moveSpeed, BoxCollider2D boxCol, Player player, Animator anim)
     {
         this.col = col;
         this.attackDamage = attackDamage;
@@ -21,6 +23,7 @@ public class EnemyAttackState : EnemyStateBase
         this.moveForce = moveSpeed;
         attHitbox = boxCol;
         this.player = player;
+        this.anim = anim;
         
     }
 
@@ -34,10 +37,13 @@ public class EnemyAttackState : EnemyStateBase
     public override void UpdateState(EnemyStateManager enemy)
     {
         //Move To Player
-        MoveTowardsPlayer(enemy);
-        //Attack Player
-        if(Input.GetKeyDown(KeyCode.L))
-            Attack();
+        if (player)
+            Attack(enemy);
+        else
+            enemy.SwitchState(enemy.IdleState, "SetToIdle");
+        //Attack When Close
+
+
     }
 
     public override void ExitState(EnemyStateManager enemy)
@@ -45,18 +51,25 @@ public class EnemyAttackState : EnemyStateBase
 
     }
 
-    void MoveTowardsPlayer(EnemyStateManager enemy)
+    void Attack(EnemyStateManager enemy)
     {
         //find Closest Target
-        float distanceToPlayer =  Mathf.Abs(player.transform.position.x - enemy.transform.position.x);
+        float distanceToPlayerX =  Mathf.Abs(player.transform.position.x - enemy.transform.position.x);
+        float distanceToPlayerY = Mathf.Abs(player.transform.position.y - enemy.transform.position.y);
+
+        float distanceToPlayer = Mathf.Sqrt(distanceToPlayerX * distanceToPlayerX + distanceToPlayerY * distanceToPlayerY);
+
+        //Debug.Log(distanceToPlayer);
         TurnToPlayerDir();
         //Walk Towards Target Position
         enemyScript.isMoving = true;
-
-        if( distanceToPlayer <= 3.5f)
+        //Gebuk musuh
+        if (distanceToPlayer <= 1.4f)
         {
+            
             //Debug.Log("CLAW ENEMY!");
             enemyScript.isMoving = false;
+            anim.SetTrigger("SetToClaw");
         }
     }
 
@@ -73,12 +86,5 @@ public class EnemyAttackState : EnemyStateBase
         }
     }
 
-    void Attack()
-    {
-        if (attHitbox.IsTouching(player.GetComponent<BoxCollider2D>()))
-        {
-            Debug.Log("Hit Player");
-        }
-    }
 
 }

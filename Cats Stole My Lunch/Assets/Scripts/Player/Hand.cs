@@ -12,8 +12,11 @@ public class Hand : MonoBehaviour
     [SerializeField] float rotationSpeed;
     [SerializeField] GameObject sandal;
     [SerializeField] int maxSandalSpawned = 2;
+    [SerializeField] SandalCooldown sd;
+    float sandalDamage;
+    float sandalCldwnTimer;
     int currentSandalSpawned = 0;
-
+    bool isCooldownOver = true;
 
     Vector2 mousePos;
 
@@ -23,17 +26,16 @@ public class Hand : MonoBehaviour
     private GameObject[] points;
     public int numberOfPoints;
     public float rangeOfPoints;
-    public float force = 12f;
-
-
+    float force = 12f;
 
     [Header("PlayerScript")]
     [SerializeField] Player player;
 
     Vector2 dir;
 
-    private void Start()
+    private void Awake()
     {
+        
         pointerSpawn.transform.position = transform.position;
 
         points = new GameObject[numberOfPoints];
@@ -42,12 +44,18 @@ public class Hand : MonoBehaviour
             points[i] = Instantiate(pointPrefab, pointerSpawn.transform);
         }
 
+        sandalDamage = player.sandalDamage;
+        sandalCldwnTimer = player.sandalCooldown;
+
+
+        force = 0.3125f * throwForce;
     }
+
 
     // Update is called once per frame
     void Update()
     {
-        if(Input.GetKeyDown(KeyCode.E))
+        if(Input.GetKeyDown(KeyCode.Mouse1))
         {
             activateThrow = !activateThrow;
         }
@@ -62,17 +70,23 @@ public class Hand : MonoBehaviour
             ResetSandalPosition();
             player.EnablePlayerMovement();
         }
-        HideAssistPoint();
+        TurnOnOrOffAssistPoint();
 
         for (int i = 0; i < points.Length; i++)
         {
             points[i].transform.position = PointPosition(i * rangeOfPoints);
         }
 
-
+        if(!isCooldownOver)
+        {
+            if(sd.GetTimer() >= sandalCldwnTimer)
+            {
+                isCooldownOver = true;
+            }
+        }
     }
 
-    void HideAssistPoint()
+    void TurnOnOrOffAssistPoint()
     {
         if(activateThrow)
         {
@@ -98,14 +112,21 @@ public class Hand : MonoBehaviour
 
     private void ThrowSandal()
     {
-        if (Input.GetButtonDown("Fire1") && currentSandalSpawned < maxSandalSpawned)
+        if (Input.GetButtonDown("Fire1") && currentSandalSpawned < maxSandalSpawned && isCooldownOver)
         {
+            isCooldownOver = false;
+                      
             Vector3 mousePos = Camera.main.ScreenToWorldPoint(Input.mousePosition);
             Vector3 dir = mousePos - transform.position;
             if (CheckIfPlayerDirAndThowDir(dir.x, playerDir.localScale.x))
             {
+                sd.StartTimer(sandalCldwnTimer);
+
+                FindObjectOfType<AudioManager>().PlaySound("SandalThrow_SFX");
+
                 GameObject sandalIns = Instantiate(sandal, transform.position, transform.rotation);
                 sandalIns.GetComponent<Rigidbody2D>().velocity = transform.right * throwForce;
+                sandalIns.GetComponent<Sandal>().SetDamage(sandalDamage);
 
                 if (playerDir.localScale.x > 0)
                 {
@@ -118,9 +139,6 @@ public class Hand : MonoBehaviour
 
                 currentSandalSpawned++;
             }
-
-
-
         }
     }
 

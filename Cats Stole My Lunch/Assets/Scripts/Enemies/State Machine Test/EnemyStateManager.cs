@@ -12,8 +12,10 @@ public class EnemyStateManager : MonoBehaviour
     public EnemyDetectionState DetectState;
 
     Player player;
+    Enemies enemies;
 
     [SerializeField] private BehaviourCollider col;
+    private BoxCollider2D boxCol;
 
     [Header("Idle Attributes")]
     [SerializeField] private float waitTime = 5f;
@@ -22,7 +24,7 @@ public class EnemyStateManager : MonoBehaviour
     [SerializeField] private float patrolTime = 5f;
 
     [Header("Pounce Attributes")]
-    [SerializeField] private float rayDistanceToPlayer = 2f;
+    [SerializeField] private float distanceToChangeToAttack = 2f;
 
     [Header("Detection Attributes")]
     [SerializeField] private float enemyDetectionTime = 1f;
@@ -35,16 +37,22 @@ public class EnemyStateManager : MonoBehaviour
     [SerializeField] float moveForce = 10f;
     [SerializeField] BoxCollider2D attHitbox;
 
+    [Header("Animator")]
+    [SerializeField] private Animator anim;
+
+
 
     private void Awake()
     {
         player = FindObjectOfType<Player>();
+        boxCol = GetComponent<BoxCollider2D>();
+        enemies = GetComponent<Enemies>();
         
         IdleState = new EnemyIdleState(waitTime, col);
         PatrolState = new EnemyPatrolState(patrolTime, col);
-        DetectState = new EnemyDetectionState(enemyDetectionTime, thresholdToPounce, col);
-        PounceState = new EnemyPounceState(rayDistanceToPlayer, col, player);
-        AttackState = new EnemyAttackState(col,attackDamage,attackSpeed,moveForce, attHitbox,player);
+        DetectState = new EnemyDetectionState(enemyDetectionTime, thresholdToPounce, col, anim);
+        PounceState = new EnemyPounceState(distanceToChangeToAttack, col, player);
+        AttackState = new EnemyAttackState(col,attackDamage,attackSpeed,moveForce, attHitbox,player,anim);
     }
 
     void Start()
@@ -64,9 +72,30 @@ public class EnemyStateManager : MonoBehaviour
         state.ExitState(this);
     }
 
-    public void SwitchState(EnemyStateBase state)
+    public void SwitchState(EnemyStateBase state, string animString)
     {    
         currentState = state;
         state.EnterState(this);
+
+        anim.SetTrigger(animString);
+
     }
+
+    public void SwitchToPounceState(EnemyStateBase state)
+    {
+        currentState = state;
+        state.EnterState(this);
+    }
+
+
+    public EnemyStateBase GetCurrentState()
+    {
+        return currentState;
+    }
+    
+    public EnemyStateBase GetAttackState()
+    {
+        return AttackState;
+    }
+
 }

@@ -18,6 +18,8 @@ public class EnemyPounceState : EnemyStateBase
 
     float walkingSpeed;
     Animator animator;
+    public bool Isjump = false;
+
     public EnemyPounceState(float distanceToPlayer, BehaviourCollider col, Player player)
     {
         attackingTreshold = distanceToPlayer;
@@ -41,13 +43,26 @@ public class EnemyPounceState : EnemyStateBase
 
         TurnToPlayerDir();
         //enemyScript.isAttacking = true;
+
+        
     }
 
     public override void UpdateState(EnemyStateManager enemy)
     {
-        PounceToEnemy();
-        //enemyScript.isAttacking = true;
-        CheckDistanceToPlayer(enemy);
+        if(enemyScript.GetCatPounce())
+        {
+            PounceToEnemy();
+            //enemyScript.isAttacking = true;
+            
+        }
+
+        //check if enemy kena gebuk sendal
+        if(enemyScript.GetIsHit())
+        {
+            enemy.SwitchState(enemy.AttackState, "SetToAttack");
+        }
+
+        
     }
     public override void ExitState(EnemyStateManager enemy)
     {
@@ -99,14 +114,4 @@ public class EnemyPounceState : EnemyStateBase
 
     }
 
-    void CheckDistanceToPlayer(EnemyStateManager enemy)
-    {
-        Vector2 distance = (Vector2)enemyScript.transform.position - targetPos;
-        //Debug.Log(distance.x);
-        if (Mathf.Abs(distance.x) <= attackingTreshold)
-        {
-            enemy.ExitState(enemy.PounceState);
-            enemy.SwitchState(enemy.AttackState);
-        }
-    }
 }
